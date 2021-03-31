@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.ortiz.model.ApiResult;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.netty.http.client.HttpClient;
@@ -88,7 +87,7 @@ public class RestClientManager {
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize records and return ApiResult
-                            apiResult.setSuccessResult(deserializeList(s.getBytes(StandardCharsets.UTF_8), returnType));
+                            apiResult.setSuccessResult(deserializeToArray(s.getBytes(StandardCharsets.UTF_8), returnType));
                             return Mono.just(apiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -112,7 +111,8 @@ public class RestClientManager {
         //Deserialize value
         return mapper.readValue(asyncParser, returnType);
     }
-    private static <T> T deserializeList(byte [] jsonBytes, Class<T> returnType) throws Exception {
+
+    private static <T> T deserializeToArray(byte[] jsonBytes, Class<T> returnType) throws Exception {
         //Get Nonblocking Parser
         JsonParser asyncParser = mapper.getFactory().createNonBlockingByteArrayParser();
 
@@ -121,7 +121,7 @@ public class RestClientManager {
         feeder.feedInput(jsonBytes, 0, jsonBytes.length);
         feeder.endOfInput();
 
-        //Deserialize values to List
+        //Deserialize values to Array
         return mapper.readerForArrayOf(returnType).readValue(jsonBytes);
     }
 }
