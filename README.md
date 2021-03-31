@@ -21,6 +21,8 @@ if (stringResult.isSuccess()) {
 
 
 _Retrieve array of REST Resources_
+
+
 Mono<ApiResult<String[]>> stringResultMono = RestClientManager.getResourcesAsync("http://localhost:8080/strings", String[].class);
 
 .
