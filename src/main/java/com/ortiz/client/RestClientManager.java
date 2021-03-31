@@ -25,23 +25,28 @@ public class RestClientManager {
                     .uri(url)
                     .responseSingle(((httpClientResponse, byteBufMono) -> {
 
+                        //Populate Request metadata
                         apiResult.setRequestPath(httpClientResponse.fullPath());
                         apiResult.setHeaders(httpClientResponse.requestHeaders());
                         apiResult.setHttpMethod(httpClientResponse.method());
 
+                        //Determine if success
                         int responseStatus = httpClientResponse.status().code();
+
+                        //If success, return response as string to reactive flow
                         if (responseStatus >= 200 && responseStatus < 300) {
                             apiResult.setSuccess(true);
-                            httpClientResponse.resourceUrl();
                             return byteBufMono.asString();
                         }
 
+                        //If error status code, throw error
                         return Mono.error(new Exception("Received Error Status Code"));
 
                     }))
-                    .log(null, Level.INFO, SignalType.ON_NEXT)
+                    .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
                     .flatMap(s -> {
                         try {
+                            //Attempt to deserialize and return ApiResult
                             apiResult.setSuccessResult(deserialize(s.getBytes(StandardCharsets.UTF_8), returnType));
                             return Mono.just(apiResult);
                         } catch (Exception e) {
@@ -61,22 +66,28 @@ public class RestClientManager {
                     .uri(url)
                     .response(((httpClientResponse, byteBufFlux) ->  {
 
+                        //Populate Request metadata
                         apiResult.setRequestPath(httpClientResponse.fullPath());
                         apiResult.setHeaders(httpClientResponse.requestHeaders());
                         apiResult.setHttpMethod(httpClientResponse.method());
 
+                        //Determine if success
                         int responseStatus = httpClientResponse.status().code();
+
+                        //If success, return response as string to reactive flow
                         if (responseStatus >= 200 && responseStatus < 300) {
                             apiResult.setSuccess(true);
                             return byteBufFlux.asString();
                         }
 
+                        //If error status code, throw error
                         return Mono.error(new Exception("Received Error Status Code"));
 
                     }))
-                    .log(null, Level.INFO, SignalType.ON_NEXT)
+                    .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
                     .flatMap(s -> {
                         try {
+                            //Attempt to deserialize records and return ApiResult
                             apiResult.setSuccessResult(deserializeList(s.getBytes(StandardCharsets.UTF_8), returnType));
                             return Flux.just(apiResult);
                         } catch (Exception e) {
@@ -90,18 +101,27 @@ public class RestClientManager {
     }
 
     private static <T> T deserialize(byte [] jsonBytes, Class<T> returnType) throws Exception {
+        //Get Nonblocking Parser
         JsonParser asyncParser = mapper.getFactory().createNonBlockingByteArrayParser();
+
+        //Feed response bytes into nonblocking feeder
         ByteArrayFeeder feeder = (ByteArrayFeeder) asyncParser.getNonBlockingInputFeeder();
         feeder.feedInput(jsonBytes, 0, jsonBytes.length);
         feeder.endOfInput();
 
+        //Deserialize value
         return mapper.readValue(asyncParser, returnType);
     }
     private static <T> T deserializeList(byte [] jsonBytes, Class<T> returnType) throws Exception {
+        //Get Nonblocking Parser
         JsonParser asyncParser = mapper.getFactory().createNonBlockingByteArrayParser();
+
+        //Feed response bytes into nonblocking feeder
         ByteArrayFeeder feeder = ((ByteArrayFeeder) asyncParser.getNonBlockingInputFeeder());
         feeder.feedInput(jsonBytes, 0, jsonBytes.length);
         feeder.endOfInput();
+
+        //Deserialize values to List
         return mapper.readerForArrayOf(returnType).readValue(jsonBytes);
     }
 }
