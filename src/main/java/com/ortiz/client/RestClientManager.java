@@ -59,12 +59,12 @@ public class RestClientManager {
         }
     }
 
-    public static <T> Flux<ApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
+    public static <T> Mono<ApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
         ApiResult<T> apiResult = new ApiResult<>();
         try {
             return httpClient.get()
                     .uri(url)
-                    .response(((httpClientResponse, byteBufFlux) ->  {
+                    .responseSingle(((httpClientResponse, byteBufMono) ->  {
 
                         //Populate Request metadata
                         apiResult.setRequestPath(httpClientResponse.fullPath());
@@ -77,7 +77,7 @@ public class RestClientManager {
                         //If success, return response as string to reactive flow
                         if (responseStatus >= 200 && responseStatus < 300) {
                             apiResult.setSuccess(true);
-                            return byteBufFlux.asString();
+                            return byteBufMono.asString();
                         }
 
                         //If error status code, throw error
@@ -89,14 +89,14 @@ public class RestClientManager {
                         try {
                             //Attempt to deserialize records and return ApiResult
                             apiResult.setSuccessResult(deserializeList(s.getBytes(StandardCharsets.UTF_8), returnType));
-                            return Flux.just(apiResult);
+                            return Mono.just(apiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
                             return Mono.error(e);
                         }
                     });
         } catch (Exception e) {
-            return Flux.empty();
+            return Mono.empty();
         }
     }
 
