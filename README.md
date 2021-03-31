@@ -3,7 +3,7 @@ This Repo is for a Reactive HTTP Client with Non-Blocking JSON Deserialization
 
 Usage:
 
-_Retrieve single REST Resource_
+**_Retrieve single REST Resource_**
 
 
 Mono<ApiResult<String>> stringResultMono = RestClientManager.getResourceAsync("http://localhost:8080/strings/1", String.class);
@@ -20,7 +20,7 @@ if (stringResult.isSuccess()) {
 
 
 
-_Retrieve array of REST Resources_
+**_Retrieve array of REST Resources_**
 
 
 Mono<ApiResult<String[]>> stringResultMono = RestClientManager.getResourcesAsync("http://localhost:8080/strings", String[].class);
