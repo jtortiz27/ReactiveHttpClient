@@ -13,17 +13,17 @@ import reactor.netty.http.client.HttpClient;
 import java.nio.charset.StandardCharsets;
 import java.util.logging.Level;
 
-public class RestClient {
+public class RestClientManager {
 
     private static final HttpClient httpClient = HttpClient.create();
     private static final ObjectMapper mapper = new JsonMapper();
 
-    public static <T> Mono<ApiResult<T>> getResourceAsync(String url, final Class<T> returnType) throws Exception {
+    public static <T> Mono<ApiResult<T>> getResourceAsync(String url, final Class<T> returnType){
         ApiResult<T> apiResult = new ApiResult<>();
         try {
             return httpClient.get()
                     .uri(url)
-                    .responseSingle(((httpClientResponse, byteBufFlux) -> {
+                    .responseSingle(((httpClientResponse, byteBufMono) -> {
 
                         apiResult.setRequestPath(httpClientResponse.fullPath());
                         apiResult.setHeaders(httpClientResponse.requestHeaders());
@@ -33,7 +33,7 @@ public class RestClient {
                         if (responseStatus >= 200 && responseStatus < 300) {
                             apiResult.setSuccess(true);
                             httpClientResponse.resourceUrl();
-                            return byteBufFlux.asString();
+                            return byteBufMono.asString();
                         }
 
                         return Mono.error(new Exception("Received Error Status Code"));
@@ -54,7 +54,7 @@ public class RestClient {
         }
     }
 
-    public static <T> Flux<ApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) throws Exception {
+    public static <T> Flux<ApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
         ApiResult<T> apiResult = new ApiResult<>();
         try {
             return httpClient.get()
