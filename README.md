@@ -1,7 +1,7 @@
 # ReactiveHttpClient
 This Repo is for a Reactive HTTP Client with Non-Blocking JSON Deserialization
 
-Usage:
+
 
 **_Retrieve single REST Resource_**
 
@@ -17,6 +17,9 @@ ApiResult<String> stringResult = stringResultMono.block(); //Or any other Mono o
 if (stringResult.isSuccess()) {
     String s = stringResult.getSuccessResult();
 }
+
+
+
 
 
 
