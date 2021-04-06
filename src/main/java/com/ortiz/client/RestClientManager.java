@@ -2,14 +2,17 @@ package com.ortiz.client;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.ortiz.model.ApiResult;
+import com.fasterxml.jackson.databind.type.CollectionType;
+import com.ortiz.model.RestApiResult;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.netty.http.client.HttpClient;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.logging.Level;
 
 public class RestClientManager {
@@ -17,24 +20,29 @@ public class RestClientManager {
     private static final HttpClient httpClient = HttpClient.create();
     private static final ObjectMapper mapper = new JsonMapper();
 
-    public static <T> Mono<ApiResult<T>> getResourceAsync(String url, final Class<T> returnType){
-        ApiResult<T> apiResult = new ApiResult<>();
+    public RestClientManager() {
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
+
+    public <T> Mono<RestApiResult<T>> getResourceAsync(String url, final Class<T> returnType) {
+        RestApiResult<T> restApiResult = new RestApiResult<>();
         try {
             return httpClient.get()
                     .uri(url)
                     .responseSingle(((httpClientResponse, byteBufMono) -> {
 
                         //Populate Request metadata
-                        apiResult.setRequestPath(httpClientResponse.fullPath());
-                        apiResult.setHeaders(httpClientResponse.requestHeaders());
-                        apiResult.setHttpMethod(httpClientResponse.method());
+                        restApiResult.setRequestPath(httpClientResponse.fullPath());
+                        restApiResult.setHeaders(httpClientResponse.requestHeaders());
+                        restApiResult.setHttpMethod(httpClientResponse.method());
+                        restApiResult.setClientResponse(httpClientResponse);
 
                         //Determine if success
                         int responseStatus = httpClientResponse.status().code();
 
-                        //If success, return response as string to reactive flow
+                        //If success, emit response as string to reactive flow
                         if (responseStatus >= 200 && responseStatus < 300) {
-                            apiResult.setSuccess(true);
+                            restApiResult.setSuccess(true);
                             return byteBufMono.asString();
                         }
 
@@ -46,8 +54,8 @@ public class RestClientManager {
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize and return ApiResult
-                            apiResult.setSuccessResult(deserialize(s.getBytes(StandardCharsets.UTF_8), returnType));
-                            return Mono.just(apiResult);
+                            restApiResult.setSuccessResult(deserialize(s.getBytes(StandardCharsets.UTF_8), returnType));
+                            return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
                             return Mono.error(e);
@@ -58,24 +66,25 @@ public class RestClientManager {
         }
     }
 
-    public static <T> Mono<ApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
-        ApiResult<T> apiResult = new ApiResult<>();
+    public <T> Mono<RestApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
+        RestApiResult<T> restApiResult = new RestApiResult<>();
         try {
             return httpClient.get()
                     .uri(url)
-                    .responseSingle(((httpClientResponse, byteBufMono) ->  {
+                    .responseSingle(((httpClientResponse, byteBufMono) -> {
 
                         //Populate Request metadata
-                        apiResult.setRequestPath(httpClientResponse.fullPath());
-                        apiResult.setHeaders(httpClientResponse.requestHeaders());
-                        apiResult.setHttpMethod(httpClientResponse.method());
+                        restApiResult.setRequestPath(httpClientResponse.fullPath());
+                        restApiResult.setHeaders(httpClientResponse.requestHeaders());
+                        restApiResult.setHttpMethod(httpClientResponse.method());
+                        restApiResult.setClientResponse(httpClientResponse);
 
                         //Determine if success
                         int responseStatus = httpClientResponse.status().code();
 
-                        //If success, return response as string to reactive flow
+                        //If success, emit response as string to reactive flow
                         if (responseStatus >= 200 && responseStatus < 300) {
-                            apiResult.setSuccess(true);
+                            restApiResult.setSuccess(true);
                             return byteBufMono.asString();
                         }
 
@@ -87,8 +96,8 @@ public class RestClientManager {
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize records and return ApiResult
-                            apiResult.setSuccessResult(deserializeToArray(s.getBytes(StandardCharsets.UTF_8), returnType));
-                            return Mono.just(apiResult);
+                            restApiResult.setSuccessResults(deserializeToList(s.getBytes(StandardCharsets.UTF_8), returnType));
+                            return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
                             return Mono.error(e);
@@ -112,7 +121,7 @@ public class RestClientManager {
         return mapper.readValue(asyncParser, returnType);
     }
 
-    private static <T> T deserializeToArray(byte[] jsonBytes, Class<T> returnType) throws Exception {
+    private static <T> List<T> deserializeToList(byte[] jsonBytes, Class<T> returnType) throws Exception {
         //Get Nonblocking Parser
         JsonParser asyncParser = mapper.getFactory().createNonBlockingByteArrayParser();
 
@@ -121,7 +130,8 @@ public class RestClientManager {
         feeder.feedInput(jsonBytes, 0, jsonBytes.length);
         feeder.endOfInput();
 
-        //Deserialize values to Array
-        return mapper.readerForArrayOf(returnType).readValue(jsonBytes);
+        //Deserialize values to List
+        CollectionType type = mapper.getTypeFactory().constructCollectionType(List.class, returnType);
+        return mapper.readValue(jsonBytes, type);
     }
 }
