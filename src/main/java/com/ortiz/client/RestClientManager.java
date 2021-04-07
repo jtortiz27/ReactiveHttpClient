@@ -24,6 +24,16 @@ public class RestClientManager {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
+    /**
+     * This Method should be used to make an HTTP GET call and shall deserialize the result to whatever class passed in <T>
+     * <p>
+     * Note: This is for retrieving a single resource and upon success, the deserialized result will be available in APIResult.getSuccessResult()
+     *
+     * @param url
+     * @param returnType
+     * @param <T>
+     * @return
+     */
     public <T> Mono<RestApiResult<T>> getResourceAsync(String url, final Class<T> returnType) {
         RestApiResult<T> restApiResult = new RestApiResult<>();
         try {
@@ -66,6 +76,16 @@ public class RestClientManager {
         }
     }
 
+    /**
+     * This Method should be used to make an HTTP GET call and shall deserialize the result to whatever class passed in <T>
+     * <p>
+     * Note: This is for retrieving a list of resources and upon success, the deserialized result will be available in APIResult.getSuccessResults()
+     *
+     * @param url
+     * @param returnType
+     * @param <T>
+     * @return
+     */
     public <T> Mono<RestApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
         RestApiResult<T> restApiResult = new RestApiResult<>();
         try {
@@ -108,7 +128,16 @@ public class RestClientManager {
         }
     }
 
-    private static <T> T deserialize(byte [] jsonBytes, Class<T> returnType) throws Exception {
+    /**
+     * This method allows for the asynchronous deserialization of a byte[] to whatever Type provided
+     *
+     * @param jsonBytes
+     * @param returnType
+     * @param <T>
+     * @return
+     * @throws Exception
+     */
+    private static <T> T deserialize(byte[] jsonBytes, Class<T> returnType) throws Exception {
         //Get Nonblocking Parser
         JsonParser asyncParser = mapper.getFactory().createNonBlockingByteArrayParser();
 
@@ -121,6 +150,15 @@ public class RestClientManager {
         return mapper.readValue(asyncParser, returnType);
     }
 
+    /**
+     * This method allows for the asynchronous deserialization of a byte[] to a list of whatever Type provided
+     *
+     * @param jsonBytes
+     * @param returnType
+     * @param <T>
+     * @return
+     * @throws Exception
+     */
     private static <T> List<T> deserializeToList(byte[] jsonBytes, Class<T> returnType) throws Exception {
         //Get Nonblocking Parser
         JsonParser asyncParser = mapper.getFactory().createNonBlockingByteArrayParser();
