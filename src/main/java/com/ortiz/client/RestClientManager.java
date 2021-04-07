@@ -31,7 +31,7 @@ public class RestClientManager {
      *
      * @param url        url of resource to retrieve
      * @param returnType Type to deserialize to
-     * @return
+     * @return APIResult with deserialized value of response
      */
     public <T> Mono<RestApiResult<T>> getResourceAsync(String url, final Class<T> returnType) {
         RestApiResult<T> restApiResult = new RestApiResult<>();
@@ -80,9 +80,9 @@ public class RestClientManager {
      * <p>
      * Note: This is for retrieving a list of resources and upon success, the deserialized result will be available in APIResult.getSuccessResults()
      *
-     * @param url  url of resources to retrieve
+     * @param url        url of resources to retrieve
      * @param returnType Type to deserialize list to
-     * @return
+     * @return APIResult with deserialized value of responses
      */
     public <T> Mono<RestApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
         RestApiResult<T> restApiResult = new RestApiResult<>();
@@ -129,11 +129,10 @@ public class RestClientManager {
     /**
      * This method allows for the asynchronous deserialization of a byte[] to whatever Type provided
      *
-     * @param jsonBytes
-     * @param returnType
-     * @param <T>
-     * @return
-     * @throws Exception
+     * @param jsonBytes byte array to feed into async parser
+     * @param returnType type to deserialize
+     * @return deserialized value
+     * @throws Exception throws exception if deserialization fails
      */
     private static <T> T deserialize(byte[] jsonBytes, Class<T> returnType) throws Exception {
         //Get Nonblocking Parser
@@ -151,11 +150,10 @@ public class RestClientManager {
     /**
      * This method allows for the asynchronous deserialization of a byte[] to a list of whatever Type provided
      *
-     * @param jsonBytes
-     * @param returnType
-     * @param <T>
-     * @return
-     * @throws Exception
+     * @param jsonBytes byte array to feed into async parser
+     * @param returnType type to deserialize
+     * @return list of deserialized values
+     * @throws Exception throws exception if deserialization fails
      */
     private static <T> List<T> deserializeToList(byte[] jsonBytes, Class<T> returnType) throws Exception {
         //Get Nonblocking Parser
