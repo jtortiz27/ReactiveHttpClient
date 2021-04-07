@@ -35,5 +35,5 @@ Mono<ApiResult<String[]>> stringResultMono = RestClientManager.getResourcesAsync
 ApiResult<String[]> stringResult = stringResultMono.block(); //Or any other Mono operator
 
 if (stringResult.isSuccess()) {
-    String[] s = stringResult.getSuccessResult();
+    String[] s = stringResult.getSuccessResults();
 }
