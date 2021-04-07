@@ -29,9 +29,8 @@ public class RestClientManager {
      * <p>
      * Note: This is for retrieving a single resource and upon success, the deserialized result will be available in APIResult.getSuccessResult()
      *
-     * @param url
-     * @param returnType
-     * @param <T>
+     * @param url        url of resource to retrieve
+     * @param returnType Type to deserialize to
      * @return
      */
     public <T> Mono<RestApiResult<T>> getResourceAsync(String url, final Class<T> returnType) {
@@ -81,9 +80,8 @@ public class RestClientManager {
      * <p>
      * Note: This is for retrieving a list of resources and upon success, the deserialized result will be available in APIResult.getSuccessResults()
      *
-     * @param url
-     * @param returnType
-     * @param <T>
+     * @param url  url of resources to retrieve
+     * @param returnType Type to deserialize list to
      * @return
      */
     public <T> Mono<RestApiResult<T>> getResourcesAsync(String url, final Class<T> returnType) {
