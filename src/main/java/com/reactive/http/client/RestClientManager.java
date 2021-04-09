@@ -131,7 +131,7 @@ public class RestClientManager {
                             e.printStackTrace();
                             return Mono.error(e);
                         }
-                    });
+                    }).single();
         } catch (Exception e) {
             populateErrorDetails(restApiResult, e);
             return Mono.just(restApiResult);
@@ -246,7 +246,7 @@ public class RestClientManager {
                             populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
-                    });
+                    }).single();
             return Mono.just(restApiResult);
         } catch (Exception e) {
             populateErrorDetails(restApiResult, e);
@@ -302,7 +302,7 @@ public class RestClientManager {
                             populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
-                    });
+                    }).single();
             return Mono.just(restApiResult);
         } catch (Exception e) {
             populateErrorDetails(restApiResult, e);
@@ -354,7 +354,7 @@ public class RestClientManager {
                             populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
-                    });
+                    }).single();
             return Mono.just(restApiResult);
         } catch (Exception e) {
             populateErrorDetails(restApiResult, e);
