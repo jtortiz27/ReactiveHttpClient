@@ -317,7 +317,6 @@ public class RestClientManager {
      * @param url url of resources to delete
      * @return APIResult with empty successResult
      */
-    @SuppressWarnings("unchecked")
     public <T> Mono<RestApiResult<T>> deleteResourceAsync(String url) {
         RestApiResult<T> restApiResult = new RestApiResult<>();
         try {
