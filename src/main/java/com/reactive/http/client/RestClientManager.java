@@ -1,4 +1,4 @@
-package com.ortiz.client;
+package com.reactive.http.client;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import com.ortiz.model.ErrorResponse;
-import com.ortiz.model.RestApiResult;
+import com.reactive.http.model.ErrorResponse;
+import com.reactive.http.model.RestApiResult;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpStatusClass;

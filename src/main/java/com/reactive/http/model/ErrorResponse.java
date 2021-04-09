@@ -1,4 +1,4 @@
-package com.ortiz.model;
+package com.reactive.http.model;
 
 import io.netty.handler.codec.http.HttpStatusClass;
 import lombok.AllArgsConstructor;
