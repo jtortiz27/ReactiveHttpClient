@@ -16,7 +16,7 @@ import java.util.List;
 public class RestApiResult<T> {
     private T successResult;
     private List<T> successResults;
-    private T errorResult;
+    private ErrorResponse errorResponse;
     private boolean success;
     private String requestPath;
     private HttpHeaders headers;

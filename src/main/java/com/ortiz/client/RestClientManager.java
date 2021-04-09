@@ -6,12 +6,15 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
+import com.ortiz.model.ErrorResponse;
 import com.ortiz.model.RestApiResult;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.handler.codec.http.HttpStatusClass;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.SignalType;
 import reactor.netty.http.client.HttpClient;
+import reactor.netty.http.client.HttpClientResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -57,23 +60,26 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
-
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
                     }))
                     .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
+                    .filter(s -> !s.isBlank())
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize and return ApiResult
                             restApiResult.setSuccessResult(deserialize(s.getBytes(StandardCharsets.UTF_8), returnType));
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
+                            populateErrorDetails(restApiResult, e);
                             e.printStackTrace();
                             return Mono.error(e);
                         }
                     }).single();
         } catch (Exception e) {
-            return Mono.error(new Exception("Excpetion occured while retrieving resource"));
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
     }
 
@@ -108,23 +114,27 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
 
                     }))
                     .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
+                    .filter(s -> !s.isBlank())
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize records and return ApiResult
                             restApiResult.setSuccessResults(deserializeToList(s.getBytes(StandardCharsets.UTF_8), returnType));
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
+                            populateErrorDetails(restApiResult, e);
                             e.printStackTrace();
                             return Mono.error(e);
                         }
                     });
         } catch (Exception e) {
-            return Mono.empty();
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
     }
 
@@ -162,22 +172,27 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
                     })
+                    .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
+                    .filter(s -> !s.isBlank())
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize and return ApiResult
                             restApiResult.setSuccessResult(deserialize(s.getBytes(StandardCharsets.UTF_8), (Class<T>) (objectToPost.getClass())));
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
+                            populateErrorDetails(restApiResult, e);
                             e.printStackTrace();
                             return Mono.error(e);
                         }
                     }).single();
             return Mono.just(restApiResult);
         } catch (Exception e) {
-            return Mono.error(e);
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
     }
 
@@ -215,9 +230,12 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
                     })
+                    .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
+                    .filter(s -> !s.isBlank())
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize and return ApiResult
@@ -225,12 +243,14 @@ public class RestClientManager {
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
-                    }).single();
+                    });
             return Mono.just(restApiResult);
         } catch (Exception e) {
-            return Mono.error(e);
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
     }
 
@@ -266,9 +286,12 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
                     })
+                    .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
+                    .filter(s -> !s.isBlank())
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize and return ApiResult
@@ -276,12 +299,14 @@ public class RestClientManager {
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
-                    }).single();
+                    });
             return Mono.just(restApiResult);
         } catch (Exception e) {
-            return Mono.error(e);
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
     }
 
@@ -314,9 +339,12 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
                     })
+                    .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
+                    .filter(s -> !s.isBlank())
                     .flatMap(s -> {
                         try {
                             //Attempt to deserialize and return ApiResult
@@ -324,12 +352,14 @@ public class RestClientManager {
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
-                    }).single();
+                    });
             return Mono.just(restApiResult);
         } catch (Exception e) {
-            return Mono.error(e);
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
     }
 
@@ -374,5 +404,29 @@ public class RestClientManager {
         //Deserialize values to List
         CollectionType type = mapper.getTypeFactory().constructCollectionType(List.class, returnType);
         return mapper.readValue(jsonBytes, type);
+    }
+
+    private static <T> void populateHttpErrorDetails(RestApiResult<T> restApiResult, int responseStatus, HttpClientResponse httpClientResponse) {
+        ErrorResponse errorResponse = restApiResult.getErrorResponse();
+        if (errorResponse == null) {
+            errorResponse = new ErrorResponse();
+        }
+        errorResponse.setHttpStatus(HttpStatusClass.valueOf(responseStatus));
+        errorResponse.setClientResponse(httpClientResponse);
+
+        restApiResult.setSuccess(false);
+
+    }
+
+    private static <T> void populateErrorDetails(RestApiResult<T> restApiResult, Exception e) {
+        ErrorResponse errorResponse = restApiResult.getErrorResponse();
+        if (errorResponse == null) {
+            errorResponse = new ErrorResponse();
+        }
+
+        errorResponse.setErrorDescription(e.getMessage());
+        errorResponse.setException(e);
+        restApiResult.setErrorResponse(errorResponse);
+        restApiResult.setSuccess(false);
     }
 }
