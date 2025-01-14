@@ -1,5 +1,6 @@
 package com.reactive.http.model;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpStatusClass;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -12,7 +13,7 @@ import reactor.netty.http.client.HttpClientResponse;
 public class ErrorResponse {
     private String errorCode;
     private String errorDescription;
-    private HttpStatusClass httpStatus;
+    private HttpResponseStatus httpStatus;
     private HttpClientResponse clientResponse;
     private Exception exception;
 }
