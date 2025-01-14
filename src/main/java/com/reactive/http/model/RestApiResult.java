@@ -1,4 +1,4 @@
-package com.ortiz.model;
+package com.reactive.http.model;
 
 
 import io.netty.handler.codec.http.HttpHeaders;
@@ -18,7 +18,7 @@ import java.util.List;
 public class RestApiResult<T> {
     private T successResult;
     private List<T> successResults;
-    private Exception errorResult;
+    private ErrorResponse errorResponse;
     private boolean success;
     private boolean isMultiple;
     private String requestPath;

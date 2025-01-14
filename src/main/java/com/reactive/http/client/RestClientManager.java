@@ -1,13 +1,13 @@
-package com.ortiz.client;
+package com.reactive.http.client;
 
 import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.async.ByteArrayFeeder;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
-import com.ortiz.model.RestApiResult;
+import com.reactive.http.model.ErrorResponse;
+import com.reactive.http.model.RestApiResult;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.handler.codec.http.HttpHeaderNames;
@@ -23,7 +23,6 @@ import reactor.netty.http.client.HttpClientResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.stream.Stream;
 
@@ -76,6 +75,9 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
                         return Mono.error(new Exception("Received Error Status Code"));
 
                     }))
@@ -86,12 +88,15 @@ public class RestClientManager {
                             restApiResult.setSuccessResult(deserialize(s.getBytes(StandardCharsets.UTF_8), returnType));
                             return Mono.empty();
                         } catch (Exception e) {
+                            populateErrorDetails(restApiResult, e);
                             e.printStackTrace();
                             return Mono.error(e);
                         }
                     }).block();
         } catch (Exception e) {
             throw e;
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
         return restApiResult;
     }
@@ -114,7 +119,10 @@ public class RestClientManager {
                     .responseSingle(((response, byteBufMono) -> {
 
                         //Populate Request metadata
-                        restApiResult.setClientResponse(response);
+                        restApiResult.setRequestPath(httpClientResponse.fullPath());
+                        restApiResult.setHeaders(httpClientResponse.requestHeaders());
+                        restApiResult.setHttpMethod(httpClientResponse.method());
+                        restApiResult.setClientResponse(httpClientResponse);
 
                         // Determine if success
                         HttpResponseStatus responseStatus = response.status();
@@ -127,8 +135,9 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
 
                     }))
                     .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
@@ -138,12 +147,14 @@ public class RestClientManager {
                             restApiResult.setSuccessResults(deserializeToList(s.getBytes(StandardCharsets.UTF_8), returnType));
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
+                            populateErrorDetails(restApiResult, e);
                             e.printStackTrace();
                             return Mono.error(e);
                         }
                     }).block();
             return restApiResult;
         } catch (Exception e) {
+            populateErrorDetails(restApiResult, e);
             throw e;
         }
     }
@@ -185,8 +196,9 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
-                        return Mono.error(new Exception("Received Error Status Code"));
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
+                        return Mono.just("");
                     })
                     .flatMap(s -> {
                         try {
@@ -194,6 +206,7 @@ public class RestClientManager {
                             restApiResult.setSuccessResult(deserialize(s.getBytes(StandardCharsets.UTF_8), (Class<T>) (objectToPost.getClass())));
                             return Mono.empty();
                         } catch (Exception e) {
+                            populateErrorDetails(restApiResult, e);
                             e.printStackTrace();
                             return Mono.error(e);
                         }
@@ -202,6 +215,8 @@ public class RestClientManager {
                     .block();
         } catch (Exception e) {
             e.printStackTrace();
+            populateErrorDetails(restApiResult, e);
+            return restApiResult;
         }
         return restApiResult;
     }
@@ -242,7 +257,8 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
                         return Mono.error(new Exception("Received Error Status Code"));
                     })
                     .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
@@ -253,11 +269,14 @@ public class RestClientManager {
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
                     }).block();
         } catch (Exception e) {
             e.printStackTrace();
+            populateErrorDetails(restApiResult, e);
+            return restApiResult;
         }
         return restApiResult;
 
@@ -301,6 +320,8 @@ public class RestClientManager {
 
                         restApiResult.setErrorResult(new Exception(responseStatus.reasonPhrase()));
                         //If error status code, throw error
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
                         return Mono.error(new Exception("Received Error Status Code"));
                     })
                     .flatMap(s -> {
@@ -310,6 +331,7 @@ public class RestClientManager {
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            populateErrorDetails(restApiResult, e);
                             return Mono.error(e);
                         }
                     })
@@ -317,6 +339,8 @@ public class RestClientManager {
                     .block();
         } catch (Exception e) {
             e.printStackTrace();
+            populateErrorDetails(restApiResult, e);
+            return Mono.just(restApiResult);
         }
         return restApiResult;
 
@@ -353,7 +377,8 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        //If error status code, throw error
+                        //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
+                        populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
                         return Mono.error(new Exception("Received Error Status Code"));
                     })
                     .flatMap(s -> {
@@ -363,6 +388,7 @@ public class RestClientManager {
                             return Mono.just(restApiResult);
                         } catch (Exception e) {
                             e.printStackTrace();
+                            populateErrorDetails(restApiResult, e);
                             restApiResult.setErrorResult(e);
                             return Mono.error(e);
                         }
@@ -370,7 +396,9 @@ public class RestClientManager {
                     .log(null, Level.INFO, SignalType.ON_NEXT) // log when data comes through pipeline
                     .block();
         } catch (Exception e) {
+            populateErrorDetails(restApiResult, e);
             e.printStackTrace();
+            return Mono.just(restApiResult);
         }
         return restApiResult;
     }
@@ -416,5 +444,29 @@ public class RestClientManager {
         //Deserialize values to List
         CollectionType type = mapper.getTypeFactory().constructCollectionType(List.class, returnType);
         return mapper.readValue(jsonBytes, type);
+    }
+
+    private static <T> void populateHttpErrorDetails(RestApiResult<T> restApiResult, int responseStatus, HttpClientResponse httpClientResponse) {
+        ErrorResponse errorResponse = restApiResult.getErrorResponse();
+        if (errorResponse == null) {
+            errorResponse = new ErrorResponse();
+        }
+        errorResponse.setHttpStatus(HttpStatusClass.valueOf(responseStatus));
+        errorResponse.setClientResponse(httpClientResponse);
+
+        restApiResult.setSuccess(false);
+
+    }
+
+    private static <T> void populateErrorDetails(RestApiResult<T> restApiResult, Exception e) {
+        ErrorResponse errorResponse = restApiResult.getErrorResponse();
+        if (errorResponse == null) {
+            errorResponse = new ErrorResponse();
+        }
+
+        errorResponse.setErrorDescription(e.getMessage());
+        errorResponse.setException(e);
+        restApiResult.setErrorResponse(errorResponse);
+        restApiResult.setSuccess(false);
     }
 }
