@@ -77,7 +77,6 @@ public class RestClientManager {
 
                         //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
                         populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
-                        return Mono.just("");
                         return Mono.error(new Exception("Received Error Status Code"));
 
                     }))
@@ -94,9 +93,8 @@ public class RestClientManager {
                         }
                     }).block();
         } catch (Exception e) {
-            throw e;
             populateErrorDetails(restApiResult, e);
-            return Mono.just(restApiResult);
+            return restApiResult;
         }
         return restApiResult;
     }
@@ -116,7 +114,7 @@ public class RestClientManager {
 //            RestApiResult<T> finalRestApiResult = restApiResult;
              httpClient.get()
                     .uri(url)
-                    .responseSingle(((response, byteBufMono) -> {
+                    .responseSingle(((httpClientResponse, byteBufMono) -> {
 
                         //Populate Request metadata
                         restApiResult.setRequestPath(httpClientResponse.fullPath());
@@ -125,7 +123,7 @@ public class RestClientManager {
                         restApiResult.setClientResponse(httpClientResponse);
 
                         // Determine if success
-                        HttpResponseStatus responseStatus = response.status();
+                        HttpResponseStatus responseStatus = httpClientResponse.status();
 
                         //If success, emit response as string to reactive flow
                         if (responseStatus.code() >= 200 && responseStatus.code() < 300) {
@@ -318,7 +316,6 @@ public class RestClientManager {
                             return byteBufMono.asString();
                         }
 
-                        restApiResult.setErrorResult(new Exception(responseStatus.reasonPhrase()));
                         //If error status code, throw error
                         //If error status code, populate ErrorResponse with appropriate HTTP level details and emit empty string
                         populateHttpErrorDetails(restApiResult, responseStatus, httpClientResponse);
@@ -340,7 +337,7 @@ public class RestClientManager {
         } catch (Exception e) {
             e.printStackTrace();
             populateErrorDetails(restApiResult, e);
-            return Mono.just(restApiResult);
+            return restApiResult;
         }
         return restApiResult;
 
@@ -389,7 +386,6 @@ public class RestClientManager {
                         } catch (Exception e) {
                             e.printStackTrace();
                             populateErrorDetails(restApiResult, e);
-                            restApiResult.setErrorResult(e);
                             return Mono.error(e);
                         }
                     })
@@ -398,7 +394,7 @@ public class RestClientManager {
         } catch (Exception e) {
             populateErrorDetails(restApiResult, e);
             e.printStackTrace();
-            return Mono.just(restApiResult);
+            return restApiResult;
         }
         return restApiResult;
     }
@@ -446,12 +442,12 @@ public class RestClientManager {
         return mapper.readValue(jsonBytes, type);
     }
 
-    private static <T> void populateHttpErrorDetails(RestApiResult<T> restApiResult, int responseStatus, HttpClientResponse httpClientResponse) {
+    private static <T> void populateHttpErrorDetails(RestApiResult<T> restApiResult, HttpResponseStatus responseStatus, HttpClientResponse httpClientResponse) {
         ErrorResponse errorResponse = restApiResult.getErrorResponse();
         if (errorResponse == null) {
             errorResponse = new ErrorResponse();
         }
-        errorResponse.setHttpStatus(HttpStatusClass.valueOf(responseStatus));
+        errorResponse.setHttpStatus(responseStatus);
         errorResponse.setClientResponse(httpClientResponse);
 
         restApiResult.setSuccess(false);
