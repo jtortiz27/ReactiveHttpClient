@@ -35,6 +35,8 @@ public class RestClientManager {
 
     public RestClientManager() {
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY,true);
+        //Set Default Headers for httpClient
         httpClient = httpClient.headers(h -> {
             h.set(HttpHeaderNames.CONTENT_TYPE, HttpHeaderValues.APPLICATION_JSON);
             h.set(HttpHeaderNames.ACCEPT, HttpHeaderValues.APPLICATION_JSON);
